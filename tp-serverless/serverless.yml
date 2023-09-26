@@ -6,10 +6,24 @@ provider:
   runtime: nodejs18.x
   region: eu-west-3
 
+# Une fonction par API
 functions:
-  function1:
+  todoFunction:
     handler: index.handler
-    events:
-      - http:
-          path: todo
-          method: GET
+
+    environment:
+      TABLE_NAME: !Ref todoTable
+
+resources:
+  Resources:
+    todoTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: todoTable
+        AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
