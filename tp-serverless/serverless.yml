@@ -4,7 +4,12 @@ frameworkVersion: '3'
 provider:
   name: aws
   runtime: nodejs18.x
+  region: eu-west-3
 
 functions:
   function1:
     handler: index.handler
+    events:
+      - http:
+          path: todo
+          method: GET
