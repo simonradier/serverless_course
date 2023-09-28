@@ -5,12 +5,41 @@ provider:
   name: aws
   runtime: nodejs18.x
   region: eu-west-3
-
+  iamRoleStatements:
+    - Effect: Allow # On autorise
+      Action:
+        - dynamodb:DescribeTable
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: !GetAtt todoTable.Arn
 # Une fonction par API
 functions:
-  todoFunction:
-    handler: index.handler
-
+  postTodoFunction:
+    handler: post.handler
+    events:
+      - http:
+          path: todo
+          method: POST
+    environment:
+      TABLE_NAME: !Ref todoTable
+  getTodoFunction:
+    handler: get.handler
+    events:
+      - http:
+          path: todo/{id}
+          method: GET
+    environment:
+      TABLE_NAME: !Ref todoTable
+  geAlltTodoFunction:
+    handler: get-all.handler
+    events:
+      - http:
+          path: todo
+          method: GET
     environment:
       TABLE_NAME: !Ref todoTable
 
