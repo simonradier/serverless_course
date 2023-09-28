@@ -5,6 +5,9 @@ provider:
   name: aws
   runtime: nodejs18.x
   region: eu-west-3
+  apiGateway:
+    apiKeys:
+      - test-tp
   iamRoleStatements:
     - Effect: Allow # On autorise
       Action:
@@ -24,6 +27,7 @@ functions:
       - http:
           path: todo
           method: POST
+          private: true
     environment:
       TABLE_NAME: !Ref todoTable
   getTodoFunction:
