@@ -8,6 +8,13 @@ provider:
   apiGateway:
     apiKeys:
       - test-tp
+    usagePlan:
+      quota:
+        limit: 1000
+        period: DAY
+      throttle:
+        burstLimit: 2
+        rateLimit: 1
   iamRoleStatements:
     - Effect: Allow # On autorise
       Action:
