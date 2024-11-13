@@ -1,0 +1,116 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Template SAM pour le TP 2 du cours serverless
+  
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 3
+
+Resources:
+  TasksApiGateway: #On enleve la magie de la création de l'API GW automatique
+    Type: 'AWS::Serverless::Api'
+    Properties:
+      StageName: Prod
+      Auth:
+        ApiKeyRequired: true # On demande l'usage d'une clé d'API
+        UsagePlan: #On demande la création d'un plan d'usage et d'une clé d'API dédiée
+          CreateUsagePlan: PER_API
+          UsagePlanName: ApiAuthorization
+          Quota:
+            Limit: 1000
+            Period: DAY
+          Throttle:
+            BurstLimit: 2
+            RateLimit: 1
+
+  TaskDBTable:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      TableName: TaskDB
+      AttributeDefinitions: # On définit les clées que l'on va utiliser
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: date
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+        - AttributeName: date
+          KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
+
+  TaskCrudFunction:
+    Type: AWS::Serverless::Function 
+    Properties:
+      CodeUri: code/
+      Handler: index.lambdaHandler
+      Runtime: nodejs20.x
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          TABLE_NAME : !Ref TaskDBTable 
+      Policies:
+       - DynamoDBCrudPolicy:
+          TableName: !Ref TaskDBTable 
+      Events:
+        GetTasks:
+          Type: Api 
+          Properties:
+            RestApiId:
+              Ref: TasksApiGateway
+            Path: /tasks
+            Method: get
+        PostTask:
+          Type: Api 
+          Properties:
+            RestApiId:
+              Ref: TasksApiGateway
+            Path: /tasks
+            Method: post    
+    Metadata: 
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: "es2020"
+        Sourcemap: true
+        EntryPoints: 
+        - task-crud/index.ts
+        External:
+        - '@aws-sdk/lib-dynamodb'   
+        - '@aws-sdk/client-dynamodb'
+              
+  NotificationGeneratordFunction:
+    Type: AWS::Serverless::Function 
+    Properties:
+      CodeUri: code/
+      Handler: index.lambdaHandler
+      Runtime: nodejs20.x
+      Architectures:
+        - x86_64
+    Metadata: 
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: "es2020"
+        Sourcemap: true
+        EntryPoints: 
+        - notification-generator/index.ts
+
+Outputs:
+  ApiKey: #Cela nous permet de récupérer la valeur de la clé d'API sur la console AWS
+    Description: "You can find your API Key in the AWS console: (Put in the request HEADER as 'x-api-key')"
+    Value: !Sub "https://console.aws.amazon.com/apigateway/home?region=${AWS::Region}#/api-keys/${TasksApiGatewayApiKey}"
+  TasksApi: #On met a jour la valeur de la ressource de l'API
+    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
+    Value: !Sub "https://${TasksApiGateway}.execute-api.${AWS::Region}.amazonaws.com/Prod/tasks/"
+  TaskCrudFunction:
+    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
+    Value: !Ref TaskCrudFunction
+  TaskCrudFunctionIamRole:
+    Description: "Implicit IAM Role created for Hello World function"
+    Value: !GetAtt TaskCrudFunctionRole.Arn
+
+

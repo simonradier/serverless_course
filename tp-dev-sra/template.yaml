@@ -1,0 +1,50 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  tp-dev-sra
+  Sample SAM Template for tp-dev-sra
+
+Globals: # Ici on retrouve des configurations globales applicables à l'ensemble des ressources
+  Function:
+    Timeout: 3
+
+Resources: # Ici on retrouve les ressources AWS qui vont être déployées
+  HelloWorldFunction:
+    Type: AWS::Serverless::Function # Représente une ressource AWS Lambda
+    Properties:
+      CodeUri: hello-world/ # Le dossier où le code est présent
+      Handler: app.lambdaHandler # Le "main" avec le fichier et la fonction à appeler
+      Runtime: nodejs20.x
+      Architectures:
+      - x86_64
+      Events:
+        GetHelloWorld:
+          Type: Api # L'évènement est de type API
+          Properties:
+            Path: /hello # Le path après l'endpoint de l'API est /hello
+            Method: get  # la methode HTTP pour invoquer la lambda est GET
+        PostHelloWorld:
+          Type: Api # L'évènement est de type API
+          Properties:
+            Path: /hello # Le path après l'endpoint de l'API est /hello
+            Method: post  # la methode HTTP pour invoquer la lambda est GET
+            
+    Metadata: # Les informations qui permettent de personnaliser le build de notre lambda
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        Sourcemap: true
+        EntryPoints:
+        - app.ts
+
+Outputs: # Ici on retrouve les sorties générées par notre déploiement (utile pour récupérer un identifier de ressource AWS)
+  HelloWorldApi:
+    Description: API Gateway endpoint URL for Prod stage for Hello World function
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
+  HelloWorldFunction:
+    Description: Hello World Lambda Function ARN
+    Value: !GetAtt HelloWorldFunction.Arn
+  HelloWorldFunctionIamRole:
+    Description: Implicit IAM Role created for Hello World function
+    Value: !GetAtt HelloWorldFunctionRole.Arn
